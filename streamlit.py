@@ -3,6 +3,7 @@ import sqlite3
 import html
 import re
 import requests
+from streamlit_extras.add_vertical_space import add_vertical_space
 
 def get_place_details(gid, api_key):
     """
@@ -99,44 +100,56 @@ def delete_place(gid):
     """Supprime un lieu de la base de données par son nom."""
     conn = sqlite3.connect("places.db")
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM saved_places WHERE gid = ?", (name,))
+    cursor.execute("DELETE FROM saved_places WHERE gid = ?", (gid,))
     conn.commit()
     conn.close()
 
 def main():
-    st.title("Google Maps Saved Places Exporter")
-    #api_key = st.text_input("Enter your Google API Key", type="password")
-    url = st.text_input("Enter Google Maps URL")
-    
-    if st.button("Extract and Save Places"):
-        if url :
+    st.set_page_config(page_title="Google Maps Saved Places Exporter", page_icon="🌍", layout="wide")
+    st.title("🌍 Google Maps Saved Places Exporter")
+    st.markdown("Easily extract and manage your saved places from Google Maps.")
+
+    # Section: Input URL
+    st.header("🔗 Extract Places")
+    url = st.text_input("Enter Google Maps URL", placeholder="Paste your Google Maps URL here...")
+    st.markdown("---")  # Add a horizontal separator
+
+    # Button to extract and save places
+    if st.button("Extract and Save Places", use_container_width=True):
+        if url:
             places = extract_places(url)
             if places:
                 save_to_db(places)
-                st.success("Places saved successfully!")
+                st.success("✅ Places saved successfully!")
             else:
-                st.error("No places found in the provided URL.")
+                st.error("⚠️ No places found in the provided URL.")
         else:
-            st.error("Please enter a valid URL and API key.")
-    
-    if st.button("Show Saved Places"):
-        places = load_places()
-        if places:
-            st.write("### Saved Places")
-            # Afficher les lieux dans un tableau
-            for place in places:
-                gid, lat, lon, name, address = place
-                col1, col2, col3 = st.columns([3, 3, 1])
-                with col1:
-                    st.write(f"**{name}** - {address}")
-                with col2:
-                    st.write(f"({lat}, {lon})")
-                with col3:
-                    if st.button(f"Delete {gid}", key=gid):
-                        delete_place(gid)
-                        st.experimental_rerun()  # Recharge l'application après suppression
-        else:
-            st.write("No places found in the database.")
+            st.error("⚠️ Please enter a valid URL.")
+
+    # Add vertical space
+    add_vertical_space(2)
+
+    # Section: Show Saved Places
+    st.header("📍 Saved Places")
+    places = load_places()
+    if places:
+        st.write("### Your Saved Places")
+        for place in places:
+            gid, lat, lon, name, address = place
+            col1, col2, col3, col4 = st.columns([3, 3, 2, 1])
+            with col1:
+                st.markdown(f"**{name}**")
+                st.caption(address)
+            with col2:
+                st.markdown(f"🌐 **Coordinates:** ({lat}, {lon})")
+            with col3:
+                st.markdown(f"🆔 **GID:** {gid}")
+            with col4:
+                if st.button("🗑️ Delete", key=f"delete_{gid}"):
+                    delete_place(gid)
+                    st.rerun()  # Reload the app after deletion
+    else:
+        st.info("No places found in the database. Start by extracting places!")
 
 if __name__ == "__main__":
     main()

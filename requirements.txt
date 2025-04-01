@@ -1,0 +1,5 @@
+streamlit
+streamlit-authenticator
+streamlit-extras
+requests
+sqlite3
